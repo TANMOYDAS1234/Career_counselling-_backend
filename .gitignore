@@ -1,0 +1,26 @@
+# Secrets — NEVER commit
+.env
+*.env
+!.env.example
+
+# Local database (legacy SQLite, no longer used)
+users.db
+*.sqlite
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node (the backend folder picked up a stray node_modules — keep it out)
+node_modules/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

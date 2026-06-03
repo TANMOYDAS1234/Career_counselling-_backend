@@ -1,0 +1,9 @@
+flask
+flask-cors
+google-generativeai
+requests
+deep-translator
+playwright
+python-dotenv
+pymongo[srv]
+gunicorn

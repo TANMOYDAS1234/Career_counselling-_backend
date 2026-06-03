@@ -1,0 +1,20 @@
+# Render Blueprint. In the Render dashboard: New → Blueprint → point at this repo.
+# Set the secret values (MONGODB_URI + the three Gemini keys) when prompted.
+services:
+  - type: web
+    name: career-counselling-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /report-data
+    envVars:
+      - key: MONGODB_URI
+        sync: false            # paste your mongodb+srv URI (with the real password) in the dashboard
+      - key: MONGODB_DB
+        value: career_counselling
+      - key: GEMINI_API_KEY_1
+        sync: false
+      - key: GEMINI_API_KEY_2
+        sync: false
+      - key: GEMINI_API_KEY_3
+        sync: false
