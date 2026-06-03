@@ -1,4 +1,6 @@
 import json
+import hmac
+import hashlib
 import google.generativeai as genai
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -1992,6 +1994,60 @@ def get_mindset_report():
     except Exception as e:
         bot.logger.error(f"Get mindset report failed: {str(e)}")
         return jsonify({'success': False, 'message': f'Failed to fetch mindset report: {str(e)}'})
+
+
+@app.route('/api/create-razorpay-order', methods=['POST'])
+def create_razorpay_order():
+    """Create a Razorpay order using the secret key (server-side), and return the
+    order id + public key id for the app to open checkout. Amount is in paise."""
+    key_id = os.getenv('RAZORPAY_KEY_ID')
+    key_secret = os.getenv('RAZORPAY_KEY_SECRET')
+    if not key_id or not key_secret:
+        return jsonify({'success': False, 'message': 'Payment is not configured on the server.'}), 500
+    try:
+        data = request.json or {}
+        amount = int(data.get('amount', 58900))  # default ₹589.00
+        resp = requests.post(
+            'https://api.razorpay.com/v1/orders',
+            auth=(key_id, key_secret),
+            json={'amount': amount, 'currency': 'INR', 'payment_capture': 1},
+            timeout=20,
+        )
+        order = resp.json()
+        if resp.status_code >= 400 or 'id' not in order:
+            msg = (order.get('error') or {}).get('description', 'Order creation failed')
+            return jsonify({'success': False, 'message': msg}), 400
+        return jsonify({
+            'success': True,
+            'orderId': order['id'],
+            'amount': order['amount'],
+            'currency': order['currency'],
+            'keyId': key_id,
+        })
+    except Exception as e:
+        bot.logger.error(f"Razorpay order creation failed: {str(e)}")
+        return jsonify({'success': False, 'message': f'Order creation failed: {str(e)}'}), 500
+
+
+@app.route('/api/verify-payment', methods=['POST'])
+def verify_payment():
+    """Verify the Razorpay payment signature server-side (HMAC-SHA256 of
+    'order_id|payment_id' with the secret key)."""
+    key_secret = os.getenv('RAZORPAY_KEY_SECRET')
+    if not key_secret:
+        return jsonify({'success': False, 'message': 'Payment is not configured on the server.'}), 500
+    data = request.json or {}
+    order_id = data.get('razorpay_order_id')
+    payment_id = data.get('razorpay_payment_id')
+    signature = data.get('razorpay_signature')
+    if not (order_id and payment_id and signature):
+        return jsonify({'success': False, 'message': 'Missing payment fields.'}), 400
+    expected = hmac.new(
+        key_secret.encode(), f'{order_id}|{payment_id}'.encode(), hashlib.sha256
+    ).hexdigest()
+    if hmac.compare_digest(expected, signature):
+        return jsonify({'success': True, 'message': 'Payment verified.'})
+    return jsonify({'success': False, 'message': 'Signature verification failed.'}), 400
 
 
 if __name__ == '__main__':
