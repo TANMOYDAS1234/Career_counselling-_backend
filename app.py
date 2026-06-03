@@ -1785,6 +1785,7 @@ def get_top_3_careers():
 
         # Generate AI-based top 3 career recommendations
         def interpret_aptitude(score):
+            score = score or 0  # treat a missing/None score as 0
             if score >= 7: return "Exceptional (fast and accurate — natural fluency)"
             if score >= 5: return "Strong (accurate, moderate pace)"
             if score >= 3: return "Moderate (developing, needs practice)"
@@ -1792,10 +1793,10 @@ def get_top_3_careers():
 
         aptitude = combined_data['assessment']['aptitudeScores']
         aptitude_summary = {
-            'numberSense':  f"{aptitude.get('numberSense', 0)}/8 — {interpret_aptitude(aptitude.get('numberSense', 0))}",
-            'wordSense':    f"{aptitude.get('wordSense', 0)}/8 — {interpret_aptitude(aptitude.get('wordSense', 0))}",
-            'shapeSense':   f"{aptitude.get('shapeSense', 0)}/8 — {interpret_aptitude(aptitude.get('shapeSense', 0))}",
-            'logicSense':   f"{aptitude.get('logicSense', 0)}/8 — {interpret_aptitude(aptitude.get('logicSense', 0))}",
+            'numberSense':  f"{aptitude.get('numberSense') or 0}/8 — {interpret_aptitude(aptitude.get('numberSense'))}",
+            'wordSense':    f"{aptitude.get('wordSense') or 0}/8 — {interpret_aptitude(aptitude.get('wordSense'))}",
+            'shapeSense':   f"{aptitude.get('shapeSense') or 0}/8 — {interpret_aptitude(aptitude.get('shapeSense'))}",
+            'logicSense':   f"{aptitude.get('logicSense') or 0}/8 — {interpret_aptitude(aptitude.get('logicSense'))}",
         }
 
         prompt = f"""Analyze this student profile and recommend EXACTLY 3 career paths.
