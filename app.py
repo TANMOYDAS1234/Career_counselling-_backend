@@ -1801,6 +1801,39 @@ def get_top_3_careers():
             'logicSense':   f"{aptitude.get('logicSense') or 0}/8 — {interpret_aptitude(aptitude.get('logicSense'))}",
         }
 
+        # Every assessment answer feeds the recommendation so each question affects the result.
+        a = combined_data['assessment']
+
+        def _fmt(v):
+            if isinstance(v, list):
+                return ', '.join(str(x) for x in v) if v else 'Not answered (skipped)'
+            if isinstance(v, dict):
+                return ', '.join(f"{k}: {val}" for k, val in v.items()) if v else 'Not answered (skipped)'
+            return v if v not in (None, '') else 'Not answered (skipped)'
+
+        # Fall back to the assessment's favourite subjects if the legacy profile is empty.
+        if not combined_data['subjects']:
+            combined_data['subjects'] = a.get('favoriteSubjects') or []
+
+        full_assessment = f"""- Reason for seeking guidance: {_fmt(a.get('whyHere'))}
+- 5-year vision: {_fmt(a.get('fiveYearVision'))}
+- Career being considered: {_fmt(a.get('careerThinking'))}
+- Career ruled out: {_fmt(a.get('careerRuledOut'))}
+- Ideal free day: {_fmt(a.get('freeSunday'))}
+- Group-project role: {_fmt(a.get('groupRole'))}
+- Biggest job turn-off: {_fmt(a.get('jobBothers'))}
+- Favourite subjects: {_fmt(a.get('favoriteSubjects'))}
+- Most difficult subject: {_fmt(a.get('difficultSubject'))}
+- Subject marks: {_fmt(a.get('subjectMarks'))}
+- Outside activities / interests: {_fmt(a.get('outsideActivities'))}
+- External validation received: {_fmt(a.get('externalValidation'))}
+- Self-initiated activity: {_fmt(a.get('selfInitiated'))}
+- Open to studying in: {_fmt(a.get('studyLocation'))}
+- Family budget stance: {_fmt(a.get('familyBudget'))}
+- Planning style: {_fmt(a.get('planningStyle'))}
+- Stress response: {_fmt(a.get('stressResponse'))}
+- Reaction to a surprising suggestion: {_fmt(a.get('surpriseReaction'))}"""
+
         prompt = f"""Analyze this student profile and recommend EXACTLY 3 career paths.
 
 Student Profile:
@@ -1824,6 +1857,11 @@ Student Profile:
   * Approach Style: {combined_data['persistenceApproachStyle'] or 'Not completed'}
   * Highest Tier Reached: {combined_data['persistenceHighestTier'] or 'N/A'}
   * Counselor Flags: {', '.join(combined_data['persistenceCounselorFlags']) if combined_data['persistenceCounselorFlags'] else 'None'}
+
+Full Assessment Responses (weigh EVERY one of these — each answer must influence the match):
+{full_assessment}
+
+Skipped answers (marked "Not answered (skipped)") simply carry no weight; do not penalise the student for them.
 
 FILTERING RULES — apply these strictly before generating recommendations:
 1. If Effort Rating contains "move on quickly" AND Approach Style contains "Intuitive": DO NOT recommend NEET, JEE, UPSC, CA, or any multi-year competitive exam path as a primary recommendation. These paths require sustained grind that this student's behavioral profile flags as high-risk.
@@ -1851,7 +1889,7 @@ Return ONLY valid JSON:
   }}
 ]
 
-CRITICAL: Match scores must be realistic (70-98) and descending. Apply all filtering rules above before selecting careers."""
+CRITICAL: Match scores must be realistic (70-98) and descending. Apply all filtering rules above before selecting careers. Base your choices on the FULL assessment above — interests, vision, subjects, behaviour, constraints, aptitude and persistence — not just one or two fields."""
         
         response = bot.generate_with_fallback(prompt)
         
