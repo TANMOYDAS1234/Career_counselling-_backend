@@ -1533,20 +1533,29 @@ def generate_pdf():
             backend_url = f"http://localhost:{_port}/report-template?key={temp_key}"
             bot.logger.info(f"Loading report template: {backend_url}")
             
-            page.goto(backend_url, wait_until='networkidle', timeout=60000)
+            # 'domcontentloaded' (not 'networkidle'): on free hosting, waiting for the
+            # network to fully idle (charts/fonts/CDN) can stall for the whole timeout.
+            page.goto(backend_url, wait_until='domcontentloaded', timeout=45000)
             bot.logger.info("Page loaded, waiting for fonts...")
-            
-            # Wait for fonts to load
+
             try:
-                page.wait_for_function("document.fonts.ready", timeout=30000)
+                page.wait_for_function("document.fonts.ready", timeout=15000)
                 bot.logger.info("Fonts loaded successfully")
             except Exception as font_error:
                 bot.logger.warning(f"Font loading timeout: {str(font_error)}")
-            
-            # Wait for content to be populated
+
+            # Wait for the template to populate. Non-fatal: if it never flips ready we
+            # still print what rendered instead of failing the whole request (500).
             bot.logger.info("Waiting for content to be ready...")
-            page.wait_for_selector('[data-translation-ready="true"]', timeout=30000)
-            bot.logger.info("Content populated and ready")
+            try:
+                page.wait_for_selector('[data-translation-ready="true"]', timeout=30000)
+                bot.logger.info("Content populated and ready")
+            except Exception as ready_error:
+                bot.logger.warning(f"Readiness wait timed out: {str(ready_error)}")
+
+            # The template flips ready ~1s BEFORE it hides its loading overlay and
+            # finishes painting — without this pause the PDF captures the overlay (blank).
+            page.wait_for_timeout(1500)
             
             # Generate PDF with proper settings for multi-language support
             bot.logger.info("Generating PDF...")
