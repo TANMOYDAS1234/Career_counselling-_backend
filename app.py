@@ -67,27 +67,41 @@ class EducationBot:
             try:
                 genai.configure(api_key=api_key)
                 self.logger.info(f"Testing API key {self.current_api_index + 1}")
-                
-                # Get available models dynamically
+
+                # Fast path: try a few known fast models directly. The old code called
+                # list_models() and test-generated against EVERY model until one worked,
+                # which added many seconds to the first AI call and could land on a slow
+                # model. We stop at the first working flash model instead.
+                preferred = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-flash-latest']
+                for name in preferred:
+                    try:
+                        model = genai.GenerativeModel(name)
+                        test_response = model.generate_content("ping")
+                        if test_response and test_response.text:
+                            self.model = model
+                            self.current_model_name = name
+                            self.logger.info(f"Connected to preferred model {name} with API key {self.current_api_index + 1}")
+                            return self.model
+                    except Exception as model_error:
+                        self.logger.warning(f"Preferred model {name} unavailable: {str(model_error)}")
+                        continue
+
+                # Fallback: dynamic discovery (original behavior) if no preferred model works.
                 available_models = list(genai.list_models())
-                
                 for model_info in available_models:
                     if hasattr(model_info, 'supported_generation_methods') and 'generateContent' in model_info.supported_generation_methods:
                         try:
                             model = genai.GenerativeModel(model_info.name)
-                            # Test the model with a simple prompt
                             test_response = model.generate_content("Test")
-                            
                             if test_response and test_response.text:
                                 self.model = model
                                 self.current_model_name = model_info.name
                                 self.logger.info(f"Successfully connected to {model_info.name} with API key {self.current_api_index + 1}")
                                 return self.model
-                                
                         except Exception as model_error:
                             self.logger.warning(f"Model {model_info.name} failed: {str(model_error)}")
                             continue
-                
+
                 raise Exception(f"No working models found for API key {self.current_api_index + 1}")
                 
             except Exception as api_error:
