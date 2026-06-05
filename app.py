@@ -2088,5 +2088,12 @@ def verify_payment():
     return jsonify({'success': False, 'message': 'Signature verification failed.'}), 400
 
 
+@app.route('/health', methods=['GET'])
+def health():
+    """Lightweight keep-alive endpoint for uptime pingers — no DB/AI work, so a
+    cron ping every ~10 min keeps the free Render instance warm cheaply."""
+    return jsonify({'status': 'ok'}), 200
+
+
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=int(os.getenv('PORT', '8080')))
