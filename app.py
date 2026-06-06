@@ -1201,22 +1201,18 @@ Module {module_number} is about: {module_labels.get(module_number, 'Career Asses
 All answers the student has given so far (across all modules completed):
 {answers_so_far}
 
-Write a SHORT, SHARP, PERSONALISED feedback paragraph (3 sentences max) that:
-1. Directly references the student's ACTUAL answers — use their specific words, subjects, activities, values
-2. Identifies a pattern, tension, or insight that ONLY applies to this specific combination of answers
-3. Tells them something they might not have noticed about themselves
-4. Is honest and direct — not generic, not motivational fluff
-5. Ends with one forward-looking sentence about what this means for their career path
+Write 3-4 SHORT, SHARP, PERSONALISED observation points about this student:
+- Put each point on its OWN line. No numbering, no bullet symbols, max ~12 words each.
+- Directly reference their ACTUAL answers (their subjects, activities, values, choices).
+- Surface a pattern, tension, or insight unique to THIS combination of answers.
+- Be honest and specific — tell them something they may not have noticed.
+- The LAST point should hint what it means for their career path in India.
 
 CRITICAL RULES:
 - Do NOT use phrases like "Great job!", "Well done!", "Interesting!", "Based on your answers"
-- Do NOT give generic career advice
-- Every sentence must be grounded in their specific answers
+- No generic career advice, no motivational fluff
 - Write in second person ("you", "your")
-- Plain text only, no bullet points, no headers
-- Maximum 3 sentences
-
-Return ONLY the feedback paragraph, nothing else."""
+- Output ONLY the 3-4 lines (one observation per line), nothing else."""
 
             response = self.generate_with_fallback(prompt)
             if not response or not response.text:
@@ -1858,6 +1854,8 @@ def get_top_3_careers():
 - Reaction to a surprising suggestion: {_fmt(a.get('surpriseReaction'))}"""
 
         prompt = f"""Analyze this student profile and recommend EXACTLY 3 career paths.
+
+CONTEXT: This student is in INDIA. Recommend ONLY careers that are realistic and in-demand in India, reachable through Indian education routes (Indian colleges/universities, entrance exams like JEE/NEET/CUET/CLAT/CA/GATE/NID/NIFT), hired by Indian or India-present employers, with salaries understood in INR. If the student is a graduate/postgraduate, recommend graduate-appropriate paths (jobs, PG specialisations, professional certifications) — NOT school-level routes.
 
 Student Profile:
 - Name: {combined_data['name']}
